@@ -1,93 +1,91 @@
-class Buniness {
+class Business {
   constructor({ room, media, view, socketBuilder, peerBuilder }) {
-    this.room = room;
-    this.media = media;
-    this.view = view;
-    this.socketBuilder = socketBuilder;
-    this.peerBuilder = peerBuilder;
+    this.room = room
+    this.media = media
+    this.view = view
 
-    this.socket = {};
-    this.currentStream = {};
-    this.currentPeer = {};
+    this.socketBuilder = socketBuilder
+    this.peerBuilder = peerBuilder
+
+    this.socket = {}
+    this.currentStream = {}
+    this.currentPeer = {}
     
-    this.peers = new Map();
+    this.peers = new Map()
   }
 
   static initialize(deps) {
-    const instance = new Buniness(deps);
-    return instance._init();
+    const instance = new Business(deps)
+    return instance._init()
   }
-
+  
   async _init() {
-    this.currentStream = await this.media.getCamera(true);
-
+    this.currentStream = await this.media.getCamera()
     this.socket = this.socketBuilder
       .setOnUserConnected(this.onUserConnected())
       .setOnUserDisconnected(this.onUserDisconnected())
-      .build(); 
-    
-    this.currentPeer = await this.peerBuilder
-      .setOnError(this.setOnError())
-      .setOnConnectionOpened(this.setOnConnectionOpened())
-      .setOnCallReceived(this.setOnCallReceived())
       .build()
 
-    this.addVideoStream('test01');
+    this.currentPeer = await this.peerBuilder
+      .setOnError(this.onPeerError())
+      .setOnConnectionOpened(this.onPeerConnectionOpened())
+      .setOnCallReceived(this.onPeerCallReceived())
+      .setOnPeerStreamReceived(this.onPeerStreamReceived())
+      .build()
+
+    this.addVideoStream('test01')
   }
 
   addVideoStream(userId, stream = this.currentStream) {
-    const isCurrentId = false;
-    this.view.renderVideo({ 
-      userId, 
-      stream, 
-      isCurrentId,
-      muted: false
+    const isCurrentId = false
+    this.view.renderVideo({
+      userId,
+      stream,
+      isCurrentId
     })
   }
 
-  onUserConnected = function() {
+  onUserConnected = function () {
     return userId => {
-      console.log('user connected', userId);
-      this.currentPeer.call(userId, this.currentStream);
+      console.log('user connected!', userId)
+      this.currentPeer.call(userId, this.currentStream)
     }
   }
 
-  onUserDisconnected = function() {
+  onUserDisconnected = function () {
     return userId => {
-      console.log('user disconnected', userId);
+      console.log('user disconnected!', userId)
     }
   }
 
-  setOnError = function() {
+  onPeerError = function () {
     return error => {
-      console.error('error on peer', error);
+      console.error('error on peer!', error)
     }
   }
 
-  setOnConnectionOpened = function() {
-    return peer => {
-      const id = peer.id;
-      console.log('peer!!', peer);
-      this.socket.emit('join-room', this.room, id);
-
+  onPeerConnectionOpened = function () {
+    return (peer) => {
+      const id = peer.id
+      console.log('peer!!', peer)
+      this.socket.emit('join-room', this.room, id)
     }
   }
-
-  setOnCallReceived = function() {
+  
+  onPeerCallReceived = function () {
     return call => {
-      console.log('answering call', call);
-      call.answer(this.currentPeer);
+      console.log('answering call', call)
+      call.answer(this.currentStream)
     }
   }
 
-  setOnPeerStreamReceived = function() {
-    return (call, stream) => {
-      const callerId = call.peer;
-      this.addVideoStream(callerId, stream);
-
-      this.peers.set(callerId, { call });
-
-      this.view.setParticipants(this.peers.size);
+  onPeerStreamReceived = function () {
+    return (call, stream ) => {
+      const callerId = call.peer 
+      this.addVideoStream(callerId, stream)
+      this.peers.set(callerId, { call })
+      
+      this.view.setParticipants(this.peers.size)
     }
   }
 }
