@@ -50,7 +50,7 @@ class Business {
       recorderInstance.startRecording()
     }
 
-    const isCurrentId = false
+    const isCurrentId = userId === this.currentPeer.id
     this.view.renderVideo({
       userId,
       stream,
@@ -103,7 +103,13 @@ class Business {
 
   onPeerStreamReceived() {
     return (call, stream ) => {
-      const callerId = call.peer 
+      const callerId = call.peer
+
+      if (this.peers.has(callerId)) {
+        console.log('calling twice, ignoring second call...', callerId)
+        return
+      }
+      
       this.addVideoStream(callerId, stream)
       this.peers.set(callerId, { call })
       
@@ -137,6 +143,7 @@ class Business {
   }
 
   onLeavePressed() {
+    this.usersRecordings.forEach((value, key) => value.download())
     console.log('leave')
   }
 
